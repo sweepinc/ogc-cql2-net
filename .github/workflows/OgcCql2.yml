@@ -7,42 +7,57 @@ on:
     tags: [ 'v*' ]
   pull_request:
     branches: [ main, develop ]
+  release:
+    types:
+      - created
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:
+    name: Build
     runs-on: ubuntu-24.04
     outputs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
-      - name: Checkout
+      - name: Checkout Source
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
+      - name: Setup .NET 10.0
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - name: Setup GitVersion
-        uses: gittools/actions/gitversion/setup@v3
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
         with:
-          versionSpec: '5.x'
+          versionSpec: '6.x'
 
-      - name: Determine version
+      - name: Execute GitVersion
         id: gitversion
-        uses: gittools/actions/gitversion/execute@v3
+        uses: gittools/actions/gitversion/execute@v4
 
       - name: Restore
         run: dotnet restore OgcCql2.slnx
 
       - name: Build
-        run: dotnet build OgcCql2.slnx -c Release --no-restore /p:Version=${{ steps.gitversion.outputs.semVer }}
+        run: dotnet build OgcCql2.slnx -c Release --no-restore /p:Version=${{ steps.gitversion.outputs.semVer }} /p:ContinuousIntegrationBuild=true
+
+      - name: Publish dist artifacts
+        run: dotnet msbuild /p:Configuration=Release /p:Version=${{ steps.gitversion.outputs.semVer }} OgcCql2.dist.msbuildproj
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: dist
+          path: dist/
 
   test:
+    name: Test (${{ matrix.os }})
     needs: build
     runs-on: ${{ matrix.os }}
     env:
@@ -52,12 +67,12 @@ jobs:
       matrix:
         os: [ubuntu-24.04, windows-2025, macos-14]
     steps:
-      - name: Checkout
+      - name: Checkout Source
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
+      - name: Setup .NET 10.0
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
@@ -72,43 +87,44 @@ jobs:
         run: dotnet test OgcCql2.slnx -c Release --no-build --no-restore
 
   release:
+    name: Release
     needs: test
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      packages: write
     steps:
-      - name: Checkout
+      - name: Checkout Source
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
+      - name: Setup .NET 10.0
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - name: Setup GitVersion
-        uses: gittools/actions/gitversion/setup@v3
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
         with:
-          versionSpec: '5.x'
+          versionSpec: '6.x'
 
-      - name: Determine version
+      - name: Execute GitVersion
         id: gitversion
-        uses: gittools/actions/gitversion/execute@v3
+        uses: gittools/actions/gitversion/execute@v4
 
-      - name: Publish dist artifacts
-        run: dotnet msbuild /p:Configuration=Release /p:Version=${{ steps.gitversion.outputs.semVer }} OgcCql2.dist.msbuildproj
-
-      - name: Upload dist artifacts
-        uses: actions/upload-artifact@v4
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v5
         with:
-          name: dist-${{ steps.gitversion.outputs.semVer }}
+          name: dist
           path: dist/
 
       - name: Create GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        uses: ncipollo/release-action@v1
         with:
-          files: |
-            dist/**/*
+          tag: ${{ steps.gitversion.outputs.semVer }}
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          artifacts: dist/**

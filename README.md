@@ -135,4 +135,4 @@ dotnet test OgcCql2.slnx -c Release
 
 ## License
 
-MIT (or project-defined license as configured in package metadata).
+Apache 2.0
