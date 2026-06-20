@@ -1,4 +1,4 @@
-namespace OgcCql2;
+namespace OgcCql2.Expressions;
 
 /// <summary>
 /// Base type for all CQL2 expression nodes.

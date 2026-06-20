@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using OgcCql2.Expressions;
 using Xunit;
 
 namespace OgcCql2.Tests;

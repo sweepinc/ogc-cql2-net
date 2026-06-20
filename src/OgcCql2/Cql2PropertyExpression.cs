@@ -1,4 +1,4 @@
-namespace OgcCql2;
+namespace OgcCql2.Expressions;
 
 /// <summary>
 /// Represents a property reference node.

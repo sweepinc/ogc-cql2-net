@@ -1,4 +1,4 @@
-namespace OgcCql2;
+namespace OgcCql2.Expressions;
 
 /// <summary>
 /// Supported unary operators in the CQL2 expression model.

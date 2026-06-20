@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
+using OgcCql2.Expressions;
 
 namespace OgcCql2;
 

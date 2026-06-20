@@ -1,4 +1,4 @@
-namespace OgcCql2;
+namespace OgcCql2.Expressions;
 
 /// <summary>
 /// Supported binary operators in the CQL2 expression model.

@@ -1,4 +1,4 @@
-namespace OgcCql2;
+namespace OgcCql2.Expressions;
 
 /// <summary>
 /// Visitor contract for traversing CQL2 expression nodes.

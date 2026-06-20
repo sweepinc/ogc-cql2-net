@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
+using OgcCql2.Expressions;
 
 namespace OgcCql2;
 
