@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Xunit;
 
-namespace Ogc.Cql2.Tests;
+namespace OgcCql2.Tests;
 
 public class Cql2RoundTripTests
 {

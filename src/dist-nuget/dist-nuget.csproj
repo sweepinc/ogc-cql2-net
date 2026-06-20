@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageProjectReference Include="..\Ogc.Cql2\Ogc.Cql2.csproj">
+    <PackageProjectReference Include="..\OgcCql2\OgcCql2.csproj">
       <PackageTargetPath>.</PackageTargetPath>
     </PackageProjectReference>
   </ItemGroup>

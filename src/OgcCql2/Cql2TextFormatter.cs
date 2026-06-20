@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace Ogc.Cql2;
+namespace OgcCql2;
 
 public static class Cql2TextFormatter
 {

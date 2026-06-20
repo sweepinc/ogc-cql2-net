@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Ogc.Cql2;
+namespace OgcCql2;
 
 public abstract record Cql2Expression
 {

@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Ogc.Cql2\Ogc.Cql2.csproj" />
+    <ProjectReference Include="..\OgcCql2\OgcCql2.csproj" />
   </ItemGroup>
 
 </Project>

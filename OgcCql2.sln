@@ -5,9 +5,9 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ogc.Cql2", "src\Ogc.Cql2\Ogc.Cql2.csproj", "{C1F80F40-ABF1-4710-A321-C632CC7A9B93}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OgcCql2", "src\OgcCql2\OgcCql2.csproj", "{C1F80F40-ABF1-4710-A321-C632CC7A9B93}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ogc.Cql2.Tests", "src\Ogc.Cql2.Tests\Ogc.Cql2.Tests.csproj", "{656593B3-E333-4758-9921-E18C64724B15}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OgcCql2.Tests", "src\OgcCql2.Tests\OgcCql2.Tests.csproj", "{656593B3-E333-4758-9921-E18C64724B15}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dist-nuget", "src\dist-nuget\dist-nuget.csproj", "{AF25F6F4-2715-4A06-B9F3-7B1543A3D734}"
 EndProject

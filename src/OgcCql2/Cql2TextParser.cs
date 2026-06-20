@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Ogc.Cql2;
+namespace OgcCql2;
 
 public static class Cql2TextParser
 {

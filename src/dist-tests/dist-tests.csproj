@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestTarget Include="Ogc.Cql2.Tests|net10.0" ProjectName="Ogc.Cql2.Tests" TargetFramework="net10.0" />
+    <TestTarget Include="OgcCql2.Tests|net10.0" ProjectName="OgcCql2.Tests" TargetFramework="net10.0" />
   </ItemGroup>
 
   <Target Name="GetCopyToOutputDirectoryItemsByTestTarget" BeforeTargets="BeforeBuild" Inputs="@(TestTarget)" Outputs="%(Identity)\null">
