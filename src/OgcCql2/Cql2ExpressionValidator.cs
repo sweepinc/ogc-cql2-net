@@ -86,7 +86,7 @@ public static class Cql2ExpressionValidator
     }
 
     /// <summary>
-    /// Validates a literal value recursively.
+    /// Validates a literal value recursively against CQL2 literal kinds.
     /// </summary>
     /// <param name="value">The literal value.</param>
     /// <param name="path">The logical path used in error messages.</param>
@@ -95,7 +95,10 @@ public static class Cql2ExpressionValidator
         if (value is null)
             return;
 
-        if (value is bool or string or sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal)
+        if (value is bool or string)
+            return;
+
+        if (IsCql2Number(value))
             return;
 
         if (value is IReadOnlyList<object?> list)
@@ -106,6 +109,32 @@ public static class Cql2ExpressionValidator
             return;
         }
 
-        throw new FormatException($"Unsupported literal value type '{value.GetType().Name}' at {path}.");
+        throw new FormatException(
+            $"Unsupported literal value type '{value.GetType().Name}' at {path}. " +
+            "Supported CQL2 literal kinds are null, boolean, string, number, and arrays.");
+    }
+
+    /// <summary>
+    /// Determines whether a CLR value can represent a CQL2 number literal.
+    /// </summary>
+    /// <param name="value">The value to inspect.</param>
+    /// <returns><see langword="true"/> when the value is a numeric CLR primitive; otherwise <see langword="false"/>.</returns>
+    static bool IsCql2Number(object value)
+    {
+        return Type.GetTypeCode(value.GetType()) switch
+        {
+            TypeCode.SByte or
+            TypeCode.Byte or
+            TypeCode.Int16 or
+            TypeCode.UInt16 or
+            TypeCode.Int32 or
+            TypeCode.UInt32 or
+            TypeCode.Int64 or
+            TypeCode.UInt64 or
+            TypeCode.Single or
+            TypeCode.Double or
+            TypeCode.Decimal => true,
+            _ => false
+        };
     }
 }

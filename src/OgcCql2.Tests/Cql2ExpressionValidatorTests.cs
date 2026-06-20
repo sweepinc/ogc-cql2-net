@@ -43,6 +43,17 @@ public class Cql2ExpressionValidatorTests
     }
 
     /// <summary>
+    /// Verifies that CQL2 numeric literals validate regardless of CLR numeric primitive choice.
+    /// </summary>
+    [Fact]
+    public void Validate_NumericLiteral_DoesNotThrow()
+    {
+        var expression = new Cql2LiteralExpression(1m);
+
+        Cql2ExpressionValidator.Validate(expression);
+    }
+
+    /// <summary>
     /// Verifies that unsupported literal value types are rejected.
     /// </summary>
     [Fact]
