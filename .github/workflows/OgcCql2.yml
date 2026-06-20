@@ -4,14 +4,51 @@ on:
   workflow_dispatch:
   push:
     branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main, develop ]
 
 permissions:
   contents: read
+
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-24.04
+    outputs:
+      semVer: ${{ steps.gitversion.outputs.semVer }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
+
+      - name: Restore
+        run: dotnet restore OgcCql2.slnx
+
+      - name: Build
+        run: dotnet build OgcCql2.slnx -c Release --no-restore /p:Version=${{ steps.gitversion.outputs.semVer }}
+
+  test:
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025, macos-14]
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -26,11 +63,47 @@ jobs:
       - name: Restore
         run: dotnet restore OgcCql2.slnx
 
-      - name: Build
-        run: dotnet build OgcCql2.slnx -c Release --no-restore
-
       - name: Test
-        run: dotnet test OgcCql2.slnx -c Release --no-build
+        run: dotnet test OgcCql2.slnx -c Release --no-restore
+
+  release:
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Setup GitVersion
+        uses: gittools/actions/gitversion/setup@v3
+        with:
+          versionSpec: '5.x'
+
+      - name: Determine version
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v3
 
       - name: Publish dist artifacts
-        run: dotnet msbuild /p:Configuration=Release OgcCql2.dist.msbuildproj
+        run: dotnet msbuild /p:Configuration=Release /p:Version=${{ steps.gitversion.outputs.semVer }} OgcCql2.dist.msbuildproj
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ steps.gitversion.outputs.semVer }}
+          path: dist/
+
+      - name: Create GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/**/*
