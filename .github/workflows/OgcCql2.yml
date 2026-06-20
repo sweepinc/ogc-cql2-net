@@ -19,8 +19,6 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-24.04
-    outputs:
-      semVer: ${{ steps.gitversion.outputs.semVer }}
     steps:
       - name: Checkout Source
         uses: actions/checkout@v5
@@ -53,32 +51,71 @@ jobs:
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v5
         with:
-          name: dist
-          path: dist/
+          name: nuget
+          path: dist/nuget
+
+      - name: Package tests
+        run: tar czvf tests.tar.gz tests
+        working-directory: dist
+
+      - name: Upload tests
+        uses: actions/upload-artifact@v5
+        with:
+          name: tests
+          path: dist/tests.tar.gz
 
   test:
-    name: Test
+    strategy:
+      matrix:
+        run:
+          - OgcCql2.Tests
+        sys:
+          - linux-x64
+        tfm:
+          - net10.0
+    name: Test (${{ matrix.run }}:${{ matrix.tfm }}:${{ matrix.sys }})
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON('{"win-x86":["windows-2022"],"win-x64":["windows-2022"],"linux-x64":["ubuntu-24.04"],"linux-arm64":["ubuntu-24.04-arm"],"osx-x64":["macos-15-intel"],"osx-arm64":["macos-15"]}')[matrix.sys] }}
     steps:
-      - name: Checkout Source
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
       - name: Setup .NET 10.0
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
-      - name: Download dist artifacts
+      - name: Download tests
         uses: actions/download-artifact@v5
         with:
-          name: dist
-          path: dist/
+          name: tests
 
-      - name: Test
-        run: dotnet test dist/tests/OgcCql2.Tests/net10.0/OgcCql2.Tests.dll --no-build
+      - name: Restore tests
+        run: tar xzvf tests.tar.gz
+
+      - name: Execute tests
+        timeout-minutes: 480
+        shell: pwsh
+        run: |
+          $run = "${{ matrix.run }}"
+          $tfm = "${{ matrix.tfm }}"
+          $sys = "${{ matrix.sys }}"
+
+          $tests = Get-Item ".\tests\$run\$tfm\*.dll"
+
+          if ($tests)
+          {
+            Add-Content $env:GITHUB_ENV "`nRET=TestResults--$run--$tfm--$sys"
+            dotnet test -f $tfm --no-build --results-directory TestResults --logger trx $tests[0].FullName
+          }
+
+      - name: Archive test results
+        if: always() && startsWith(env.RET, 'TestResults--')
+        run: tar czvf TestResults.tar.gz TestResults
+
+      - name: Upload test results
+        if: always() && startsWith(env.RET, 'TestResults--')
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ env.RET }}
+          path: TestResults.tar.gz
 
   release:
     name: Release
@@ -108,16 +145,17 @@ jobs:
         id: gitversion
         uses: gittools/actions/gitversion/execute@v4
 
-      - name: Download dist artifacts
+      - name: Download NuGet packages
         uses: actions/download-artifact@v5
         with:
-          name: dist
-          path: dist/
+          name: nuget
+          path: dist/nuget
 
       - name: Create GitHub release
         if: github.ref_type == 'tag'
         uses: ncipollo/release-action@v1
         with:
+          tag: ${{ steps.gitversion.outputs.semVer }}
           allowUpdates: true
           omitBodyDuringUpdate: true
-          artifacts: dist/**
+          artifacts: dist/nuget/*.nupkg,dist/nuget/*.snupkg

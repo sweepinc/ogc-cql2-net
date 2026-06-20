@@ -18,7 +18,21 @@ public static class Cql2ExpressionValidator
     public static void Validate(Cql2Expression expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        ValidateExpression(expression, "$");
+        ValidateExpression(expression, "$", null);
+    }
+
+    /// <summary>
+    /// Validates an expression tree and enforces that function calls use known function names.
+    /// </summary>
+    /// <param name="expression">The expression tree to validate.</param>
+    /// <param name="knownFunctions">The function names allowed by the current CQL2 profile.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="expression"/> or <paramref name="knownFunctions"/> is <see langword="null"/>.</exception>
+    /// <exception cref="FormatException">Thrown when the expression tree contains invalid content or unknown functions.</exception>
+    public static void Validate(Cql2Expression expression, IEnumerable<string> knownFunctions)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(knownFunctions);
+        ValidateExpression(expression, "$", new HashSet<string>(knownFunctions, StringComparer.OrdinalIgnoreCase));
     }
 
     /// <summary>
@@ -26,7 +40,8 @@ public static class Cql2ExpressionValidator
     /// </summary>
     /// <param name="expression">The expression node.</param>
     /// <param name="path">The logical path used in error messages.</param>
-    static void ValidateExpression(Cql2Expression expression, string path)
+    /// <param name="knownFunctions">The optional set of function names allowed by the current CQL2 profile.</param>
+    static void ValidateExpression(Cql2Expression expression, string path, ISet<string>? knownFunctions)
     {
         switch (expression)
         {
@@ -42,7 +57,7 @@ public static class Cql2ExpressionValidator
                 if (unary.Operand is null)
                     throw new FormatException($"Unary operand is required at {path}.");
 
-                ValidateExpression(unary.Operand, $"{path}.operand");
+                ValidateExpression(unary.Operand, $"{path}.operand", knownFunctions);
                 return;
             case Cql2BinaryExpression binary:
                 if (binary.Left is null)
@@ -51,11 +66,11 @@ public static class Cql2ExpressionValidator
                 if (binary.Right is null)
                     throw new FormatException($"Binary right operand is required at {path}.");
 
-                ValidateExpression(binary.Left, $"{path}.left");
-                ValidateExpression(binary.Right, $"{path}.right");
+                ValidateExpression(binary.Left, $"{path}.left", knownFunctions);
+                ValidateExpression(binary.Right, $"{path}.right", knownFunctions);
                 return;
             case Cql2FunctionCallExpression function:
-                ValidateFunction(function, path);
+                ValidateFunction(function, path, knownFunctions);
                 return;
             default:
                 throw new FormatException($"Unsupported expression node type '{expression.GetType().Name}' at {path}.");
@@ -67,10 +82,14 @@ public static class Cql2ExpressionValidator
     /// </summary>
     /// <param name="function">The function expression to validate.</param>
     /// <param name="path">The logical path used in error messages.</param>
-    static void ValidateFunction(Cql2FunctionCallExpression function, string path)
+    /// <param name="knownFunctions">The optional set of function names allowed by the current CQL2 profile.</param>
+    static void ValidateFunction(Cql2FunctionCallExpression function, string path, ISet<string>? knownFunctions)
     {
         if (string.IsNullOrWhiteSpace(function.Name))
             throw new FormatException($"Function name is required at {path}.");
+
+        if (knownFunctions is not null && !knownFunctions.Contains(function.Name))
+            throw new FormatException($"Unknown function '{function.Name}' at {path}.");
 
         if (function.Arguments is null)
             throw new FormatException($"Function arguments are required at {path}.");
@@ -81,7 +100,7 @@ public static class Cql2ExpressionValidator
             if (argument is null)
                 throw new FormatException($"Function argument is required at {path}.args[{i}].");
 
-            ValidateExpression(argument, $"{path}.args[{i}]");
+            ValidateExpression(argument, $"{path}.args[{i}]", knownFunctions);
         }
     }
 

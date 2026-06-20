@@ -54,6 +54,28 @@ public class Cql2ExpressionValidatorTests
     }
 
     /// <summary>
+    /// Verifies that validation can enforce an allowed function set.
+    /// </summary>
+    [Fact]
+    public void Validate_UnknownFunction_ThrowsFormatException()
+    {
+        var expression = new Cql2FunctionCallExpression("contains", new Cql2Expression[] { new Cql2PropertyExpression("name"), new Cql2LiteralExpression("x") });
+
+        Assert.Throws<FormatException>(() => Cql2ExpressionValidator.Validate(expression, new[] { "lower", "upper" }));
+    }
+
+    /// <summary>
+    /// Verifies that known function names validate case-insensitively.
+    /// </summary>
+    [Fact]
+    public void Validate_KnownFunction_DoesNotThrow()
+    {
+        var expression = new Cql2FunctionCallExpression("CONTAINS", new Cql2Expression[] { new Cql2PropertyExpression("name"), new Cql2LiteralExpression("x") });
+
+        Cql2ExpressionValidator.Validate(expression, new[] { "contains" });
+    }
+
+    /// <summary>
     /// Verifies that unsupported literal value types are rejected.
     /// </summary>
     [Fact]
