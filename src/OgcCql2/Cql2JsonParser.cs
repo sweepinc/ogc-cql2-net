@@ -10,8 +10,12 @@ public static class Cql2JsonParser
     public static Cql2Expression Parse(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
+        return Parse(Encoding.UTF8.GetBytes(json));
+    }
 
-        var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
+    public static Cql2Expression Parse(ReadOnlySpan<byte> utf8Json)
+    {
+        var reader = new Utf8JsonReader(utf8Json);
         if (!reader.Read())
         {
             throw new FormatException("JSON input is empty.");
