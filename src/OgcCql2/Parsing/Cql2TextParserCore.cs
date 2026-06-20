@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using OgcCql2.Expressions;
 
-namespace OgcCql2;
+namespace OgcCql2.Parsing;
 
 /// <summary>
 /// Recursive-descent parser over tokenized CQL2 text input.

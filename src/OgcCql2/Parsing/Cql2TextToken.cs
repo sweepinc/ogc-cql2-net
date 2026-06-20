@@ -1,4 +1,4 @@
-namespace OgcCql2;
+namespace OgcCql2.Parsing;
 
 /// <summary>
 /// Immutable token value returned by the lexer.

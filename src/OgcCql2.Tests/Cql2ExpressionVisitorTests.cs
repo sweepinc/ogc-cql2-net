@@ -1,4 +1,5 @@
 using Xunit;
+using OgcCql2.Parsing;
 
 namespace OgcCql2.Tests;
 

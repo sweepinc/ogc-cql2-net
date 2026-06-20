@@ -1,7 +1,7 @@
 using System;
 using OgcCql2.Expressions;
 
-namespace OgcCql2;
+namespace OgcCql2.Parsing;
 
 /// <summary>
 /// Parses CQL2 text expressions into expression nodes.

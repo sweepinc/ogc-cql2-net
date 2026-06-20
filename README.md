@@ -21,6 +21,7 @@ dotnet add package OgcCql2
 
 ```csharp
 using OgcCql2;
+using OgcCql2.Parsing;
 
 var textExpression = Cql2TextParser.Parse("foo = 1 AND NOT bar >= 10");
 var canonicalText = Cql2TextFormatter.Format(textExpression);

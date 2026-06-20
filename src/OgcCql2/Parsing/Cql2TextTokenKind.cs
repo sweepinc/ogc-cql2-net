@@ -1,4 +1,4 @@
-namespace OgcCql2;
+namespace OgcCql2.Parsing;
 
 /// <summary>
 /// Token kinds used by the CQL2 lexer.

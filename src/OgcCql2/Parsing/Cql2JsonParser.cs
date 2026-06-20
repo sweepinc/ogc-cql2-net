@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json;
 using OgcCql2.Expressions;
 
-namespace OgcCql2;
+namespace OgcCql2.Parsing;
 
 /// <summary>
 /// Parses CQL2 JSON payloads into expression nodes.

@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace OgcCql2;
+namespace OgcCql2.Parsing;
 
 /// <summary>
 /// Lexical tokenizer for CQL2 text input.
