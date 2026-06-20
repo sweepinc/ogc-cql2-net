@@ -7,12 +7,22 @@ namespace OgcCql2;
 
 public static class Cql2JsonParser
 {
+    /// <summary>
+    /// Parses a CQL2 JSON expression from a UTF-16 JSON string.
+    /// </summary>
+    /// <remarks>
+    /// This overload encodes the input string as UTF-8. For performance-sensitive paths,
+    /// prefer <see cref="Parse(ReadOnlySpan{byte})"/> to avoid an extra string-to-byte copy.
+    /// </remarks>
     public static Cql2Expression Parse(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
         return Parse(Encoding.UTF8.GetBytes(json));
     }
 
+    /// <summary>
+    /// Parses a CQL2 JSON expression from UTF-8 JSON bytes using a forward-only reader.
+    /// </summary>
     public static Cql2Expression Parse(ReadOnlySpan<byte> utf8Json)
     {
         var reader = new Utf8JsonReader(utf8Json);
