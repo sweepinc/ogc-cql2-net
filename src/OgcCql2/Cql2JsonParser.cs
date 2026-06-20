@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
@@ -17,7 +18,16 @@ public static class Cql2JsonParser
     public static Cql2Expression Parse(string json)
     {
         ArgumentNullException.ThrowIfNull(json);
-        return Parse(Encoding.UTF8.GetBytes(json));
+        var rented = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(json.Length));
+        try
+        {
+            var byteCount = Encoding.UTF8.GetBytes(json, rented);
+            return Parse(rented.AsSpan(0, byteCount));
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+        }
     }
 
     /// <summary>
@@ -108,7 +118,11 @@ public static class Cql2JsonParser
                     args = ParseExpressionArray(ref reader);
                     break;
                 default:
-                    SkipValue(ref reader);
+                    if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+                    {
+                        reader.Skip();
+                    }
+
                     break;
             }
         }
@@ -218,11 +232,4 @@ public static class Cql2JsonParser
         };
     }
 
-    private static void SkipValue(ref Utf8JsonReader reader)
-    {
-        if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
-        {
-            reader.Skip();
-        }
-    }
 }
