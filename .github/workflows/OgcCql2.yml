@@ -45,6 +45,8 @@ jobs:
   test:
     needs: build
     runs-on: ${{ matrix.os }}
+    env:
+      VERSION: ${{ needs.build.outputs.semVer }}
     strategy:
       fail-fast: false
       matrix:
@@ -63,8 +65,11 @@ jobs:
       - name: Restore
         run: dotnet restore OgcCql2.slnx
 
+      - name: Build
+        run: dotnet build OgcCql2.slnx -c Release --no-restore /p:Version=${{ env.VERSION }}
+
       - name: Test
-        run: dotnet test OgcCql2.slnx -c Release --no-restore
+        run: dotnet test OgcCql2.slnx -c Release --no-build --no-restore
 
   release:
     needs: test
