@@ -124,7 +124,6 @@ jobs:
         if: github.ref_type == 'tag'
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.gitversion.outputs.semVer }}
           allowUpdates: true
           omitBodyDuringUpdate: true
           artifacts: dist/**
