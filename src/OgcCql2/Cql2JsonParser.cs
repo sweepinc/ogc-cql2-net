@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text;
 using System.Text.Json;
 
 namespace OgcCql2;
@@ -9,41 +9,112 @@ public static class Cql2JsonParser
 {
     public static Cql2Expression Parse(string json)
     {
-        using var document = JsonDocument.Parse(json ?? throw new ArgumentNullException(nameof(json)));
-        return ParseExpression(document.RootElement);
+        ArgumentNullException.ThrowIfNull(json);
+
+        var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
+        if (!reader.Read())
+        {
+            throw new FormatException("JSON input is empty.");
+        }
+
+        var expression = ParseExpression(ref reader);
+        if (reader.Read())
+        {
+            throw new FormatException("Unexpected trailing JSON content.");
+        }
+
+        return expression;
     }
 
-    private static Cql2Expression ParseExpression(JsonElement element)
+    private static Cql2Expression ParseExpression(ref Utf8JsonReader reader)
     {
-        return element.ValueKind switch
+        return reader.TokenType switch
         {
-            JsonValueKind.String => new Cql2LiteralExpression(element.GetString()),
-            JsonValueKind.True => new Cql2LiteralExpression(true),
-            JsonValueKind.False => new Cql2LiteralExpression(false),
-            JsonValueKind.Null => new Cql2LiteralExpression(null),
-            JsonValueKind.Number => ParseNumber(element),
-            JsonValueKind.Object => ParseObject(element),
-            JsonValueKind.Array => new Cql2LiteralExpression(ParseLiteralArray(element)),
-            _ => throw new FormatException($"Unsupported JSON value kind: {element.ValueKind}")
+            JsonTokenType.String => new Cql2LiteralExpression(reader.GetString()),
+            JsonTokenType.True => new Cql2LiteralExpression(true),
+            JsonTokenType.False => new Cql2LiteralExpression(false),
+            JsonTokenType.Null => new Cql2LiteralExpression(null),
+            JsonTokenType.Number => ParseNumber(ref reader),
+            JsonTokenType.StartObject => ParseObject(ref reader),
+            JsonTokenType.StartArray => new Cql2LiteralExpression(ParseLiteralArray(ref reader)),
+            _ => throw new FormatException($"Unsupported JSON token: {reader.TokenType}")
         };
     }
 
-    private static Cql2Expression ParseObject(JsonElement element)
+    private static Cql2Expression ParseObject(ref Utf8JsonReader reader)
     {
-        if (element.TryGetProperty("property", out var propertyElement) && propertyElement.ValueKind == JsonValueKind.String)
+        string? property = null;
+        string? op = null;
+        List<Cql2Expression>? args = null;
+        var endedObject = false;
+
+        while (reader.Read())
         {
-            return new Cql2PropertyExpression(propertyElement.GetString()!);
+            if (reader.TokenType == JsonTokenType.EndObject)
+            {
+                endedObject = true;
+                break;
+            }
+
+            if (reader.TokenType != JsonTokenType.PropertyName)
+            {
+                throw new FormatException($"Expected property name but found {reader.TokenType}");
+            }
+
+            var propertyName = reader.GetString();
+            if (!reader.Read())
+            {
+                throw new FormatException("Unexpected end of JSON while reading object value.");
+            }
+
+            switch (propertyName)
+            {
+                case "property":
+                    if (reader.TokenType != JsonTokenType.String)
+                    {
+                        throw new FormatException("'property' field must be a string.");
+                    }
+
+                    property = reader.GetString();
+                    break;
+                case "op":
+                    if (reader.TokenType != JsonTokenType.String)
+                    {
+                        throw new FormatException("'op' field must be a string.");
+                    }
+
+                    op = reader.GetString();
+                    break;
+                case "args":
+                    if (reader.TokenType != JsonTokenType.StartArray)
+                    {
+                        throw new FormatException("'args' field must be an array.");
+                    }
+
+                    args = ParseExpressionArray(ref reader);
+                    break;
+                default:
+                    SkipValue(ref reader);
+                    break;
+            }
         }
 
-        if (!element.TryGetProperty("op", out var opElement) || opElement.ValueKind != JsonValueKind.String)
+        if (!endedObject)
+        {
+            throw new FormatException("Unexpected end of JSON while reading expression object.");
+        }
+
+        if (property is not null)
+        {
+            return new Cql2PropertyExpression(property);
+        }
+
+        if (op is null)
         {
             throw new FormatException("JSON expression object must have an 'op' or 'property' field");
         }
 
-        var op = opElement.GetString()!;
-        var args = element.TryGetProperty("args", out var argsElement)
-            ? argsElement.EnumerateArray().Select(ParseExpression).ToList()
-            : new List<Cql2Expression>();
+        args ??= new List<Cql2Expression>();
 
         return op.ToLowerInvariant() switch
         {
@@ -76,33 +147,68 @@ public static class Cql2JsonParser
         return expression;
     }
 
-    private static Cql2Expression ParseNumber(JsonElement element)
+    private static Cql2Expression ParseNumber(ref Utf8JsonReader reader)
     {
-        if (element.TryGetInt64(out var integer))
+        if (reader.TryGetInt64(out var integer))
         {
             return new Cql2LiteralExpression(integer);
         }
 
-        return new Cql2LiteralExpression(element.GetDouble());
+        return new Cql2LiteralExpression(reader.GetDouble());
     }
 
-    private static IReadOnlyList<object?> ParseLiteralArray(JsonElement element)
+    private static List<Cql2Expression> ParseExpressionArray(ref Utf8JsonReader reader)
     {
-        return element.EnumerateArray().Select(ParseLiteralValue).ToList();
-    }
-
-    private static object? ParseLiteralValue(JsonElement element)
-    {
-        return element.ValueKind switch
+        var values = new List<Cql2Expression>();
+        while (reader.Read())
         {
-            JsonValueKind.String => element.GetString(),
-            JsonValueKind.True => true,
-            JsonValueKind.False => false,
-            JsonValueKind.Null => null,
-            JsonValueKind.Number when element.TryGetInt64(out var integer) => integer,
-            JsonValueKind.Number => element.GetDouble(),
-            JsonValueKind.Array => element.EnumerateArray().Select(ParseLiteralValue).ToList(),
-            _ => throw new FormatException($"Unsupported literal JSON value kind: {element.ValueKind}")
+            if (reader.TokenType == JsonTokenType.EndArray)
+            {
+                return values;
+            }
+
+            values.Add(ParseExpression(ref reader));
+        }
+
+        throw new FormatException("Unexpected end of JSON while reading args array.");
+    }
+
+    private static IReadOnlyList<object?> ParseLiteralArray(ref Utf8JsonReader reader)
+    {
+        var values = new List<object?>();
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.EndArray)
+            {
+                return values;
+            }
+
+            values.Add(ParseLiteralValue(ref reader));
+        }
+
+        throw new FormatException("Unexpected end of JSON while reading literal array.");
+    }
+
+    private static object? ParseLiteralValue(ref Utf8JsonReader reader)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.String => reader.GetString(),
+            JsonTokenType.True => true,
+            JsonTokenType.False => false,
+            JsonTokenType.Null => null,
+            JsonTokenType.Number when reader.TryGetInt64(out var integer) => integer,
+            JsonTokenType.Number => reader.GetDouble(),
+            JsonTokenType.StartArray => ParseLiteralArray(ref reader),
+            _ => throw new FormatException($"Unsupported literal JSON token: {reader.TokenType}")
         };
+    }
+
+    private static void SkipValue(ref Utf8JsonReader reader)
+    {
+        if (reader.TokenType is JsonTokenType.StartObject or JsonTokenType.StartArray)
+        {
+            reader.Skip();
+        }
     }
 }
