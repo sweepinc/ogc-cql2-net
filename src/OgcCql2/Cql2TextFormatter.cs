@@ -5,15 +5,29 @@ using System.Linq;
 
 namespace OgcCql2;
 
+/// <summary>
+/// Formats expression nodes into canonical CQL2 text.
+/// </summary>
 public static class Cql2TextFormatter
 {
+    /// <summary>
+    /// Formats an expression as canonical CQL2 text.
+    /// </summary>
+    /// <param name="expression">The expression to format.</param>
+    /// <returns>The canonical CQL2 text representation.</returns>
     public static string Format(Cql2Expression expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
         return Write(expression, parentPrecedence: 0);
     }
 
-    private static string Write(Cql2Expression expression, int parentPrecedence)
+    /// <summary>
+    /// Writes an expression with parent-precedence aware parenthesis insertion.
+    /// </summary>
+    /// <param name="expression">The expression to write.</param>
+    /// <param name="parentPrecedence">The precedence of the parent expression.</param>
+    /// <returns>The formatted expression text.</returns>
+    static string Write(Cql2Expression expression, int parentPrecedence)
     {
         return expression switch
         {
@@ -26,7 +40,13 @@ public static class Cql2TextFormatter
         };
     }
 
-    private static string FormatBinary(Cql2BinaryExpression expression, int parentPrecedence)
+    /// <summary>
+    /// Formats a binary expression.
+    /// </summary>
+    /// <param name="expression">The binary expression.</param>
+    /// <param name="parentPrecedence">The parent precedence.</param>
+    /// <returns>The formatted binary expression text.</returns>
+    static string FormatBinary(Cql2BinaryExpression expression, int parentPrecedence)
     {
         var precedence = Precedence(expression);
         var left = Write(expression.Left, precedence);
@@ -35,12 +55,24 @@ public static class Cql2TextFormatter
         return ParenthesizeIfNeeded(text, precedence, parentPrecedence);
     }
 
-    private static string ParenthesizeIfNeeded(string text, int currentPrecedence, int parentPrecedence)
+    /// <summary>
+    /// Adds parentheses when the current precedence is lower than the parent precedence.
+    /// </summary>
+    /// <param name="text">The expression text.</param>
+    /// <param name="currentPrecedence">The current expression precedence.</param>
+    /// <param name="parentPrecedence">The parent expression precedence.</param>
+    /// <returns>The original or parenthesized expression text.</returns>
+    static string ParenthesizeIfNeeded(string text, int currentPrecedence, int parentPrecedence)
     {
         return currentPrecedence < parentPrecedence ? $"({text})" : text;
     }
 
-    private static int Precedence(Cql2Expression expression)
+    /// <summary>
+    /// Gets operator precedence for the specified expression.
+    /// </summary>
+    /// <param name="expression">The expression.</param>
+    /// <returns>The precedence value.</returns>
+    static int Precedence(Cql2Expression expression)
     {
         return expression switch
         {
@@ -52,7 +84,12 @@ public static class Cql2TextFormatter
         };
     }
 
-    private static string OperatorText(Cql2BinaryOperator op)
+    /// <summary>
+    /// Maps a binary operator enum value to canonical CQL2 text.
+    /// </summary>
+    /// <param name="op">The binary operator.</param>
+    /// <returns>The operator text.</returns>
+    static string OperatorText(Cql2BinaryOperator op)
     {
         return op switch
         {
@@ -68,7 +105,12 @@ public static class Cql2TextFormatter
         };
     }
 
-    private static string FormatLiteral(object? value)
+    /// <summary>
+    /// Formats a literal value as canonical CQL2 text.
+    /// </summary>
+    /// <param name="value">The literal value.</param>
+    /// <returns>The formatted literal text.</returns>
+    static string FormatLiteral(object? value)
     {
         return value switch
         {

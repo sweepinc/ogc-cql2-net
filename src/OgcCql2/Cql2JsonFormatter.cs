@@ -5,15 +5,28 @@ using System.Text.Json.Nodes;
 
 namespace OgcCql2;
 
+/// <summary>
+/// Formats expression nodes into canonical CQL2 JSON.
+/// </summary>
 public static class Cql2JsonFormatter
 {
+    /// <summary>
+    /// Formats an expression as canonical CQL2 JSON.
+    /// </summary>
+    /// <param name="expression">The expression to format.</param>
+    /// <returns>The canonical JSON representation.</returns>
     public static string Format(Cql2Expression expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
         return ToNode(expression).ToJsonString();
     }
 
-    private static JsonNode ToNode(Cql2Expression expression)
+    /// <summary>
+    /// Converts an expression node to a JSON node.
+    /// </summary>
+    /// <param name="expression">The expression to convert.</param>
+    /// <returns>The JSON node representation.</returns>
+    static JsonNode ToNode(Cql2Expression expression)
     {
         return expression switch
         {
@@ -34,7 +47,12 @@ public static class Cql2JsonFormatter
         };
     }
 
-    private static JsonNode ToBinaryNode(Cql2BinaryExpression expression)
+    /// <summary>
+    /// Converts a binary expression to a JSON node.
+    /// </summary>
+    /// <param name="expression">The binary expression to convert.</param>
+    /// <returns>The JSON node representation.</returns>
+    static JsonNode ToBinaryNode(Cql2BinaryExpression expression)
     {
         if (expression.Operator is Cql2BinaryOperator.And or Cql2BinaryOperator.Or)
         {
@@ -55,7 +73,13 @@ public static class Cql2JsonFormatter
         };
     }
 
-    private static void FlattenBinary(Cql2Expression expression, Cql2BinaryOperator targetOperator, List<JsonNode> args)
+    /// <summary>
+    /// Flattens an associative binary tree into argument nodes.
+    /// </summary>
+    /// <param name="expression">The expression to flatten.</param>
+    /// <param name="targetOperator">The operator to flatten.</param>
+    /// <param name="args">The collected arguments.</param>
+    static void FlattenBinary(Cql2Expression expression, Cql2BinaryOperator targetOperator, List<JsonNode> args)
     {
         if (expression is Cql2BinaryExpression binary && binary.Operator == targetOperator)
         {
@@ -67,7 +91,12 @@ public static class Cql2JsonFormatter
         args.Add(ToNode(expression));
     }
 
-    private static JsonNode ToLiteralNode(object? value)
+    /// <summary>
+    /// Converts a literal value to a JSON node.
+    /// </summary>
+    /// <param name="value">The literal value.</param>
+    /// <returns>The JSON node representation.</returns>
+    static JsonNode ToLiteralNode(object? value)
     {
         return value switch
         {
@@ -80,7 +109,12 @@ public static class Cql2JsonFormatter
         };
     }
 
-    private static string OperatorText(Cql2BinaryOperator op)
+    /// <summary>
+    /// Maps a binary operator to canonical JSON operator text.
+    /// </summary>
+    /// <param name="op">The binary operator.</param>
+    /// <returns>The JSON operator text.</returns>
+    static string OperatorText(Cql2BinaryOperator op)
     {
         return op switch
         {

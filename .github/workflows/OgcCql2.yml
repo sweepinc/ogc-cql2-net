@@ -24,13 +24,13 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore
-        run: dotnet restore OgcCql2.sln
+        run: dotnet restore OgcCql2.slnx
 
       - name: Build
-        run: dotnet build OgcCql2.sln -c Release --no-restore
+        run: dotnet build OgcCql2.slnx -c Release --no-restore
 
       - name: Test
-        run: dotnet test OgcCql2.sln -c Release --no-build
+        run: dotnet test OgcCql2.slnx -c Release --no-build
 
       - name: Publish dist artifacts
         run: dotnet msbuild /p:Configuration=Release OgcCql2.dist.msbuildproj
