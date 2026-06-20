@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestTarget Include="Ogc.Cql2.Tests|net10.0" ProjectName="Ogc.Cql2.Tests" TargetFramework="net10.0" />
+  </ItemGroup>
+
+  <Target Name="GetCopyToOutputDirectoryItemsByTestTarget" BeforeTargets="BeforeBuild" Inputs="@(TestTarget)" Outputs="%(Identity)\null">
+    <PropertyGroup>
+      <_ProjectName>%(TestTarget.ProjectName)</_ProjectName>
+      <_ProjectFile Condition="Exists('..\$(_ProjectName)\$(_ProjectName).csproj')">..\$(_ProjectName)\$(_ProjectName).csproj</_ProjectFile>
+      <_TargetFramework>%(TestTarget.TargetFramework)</_TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PublishProjectReference Include="$(_ProjectFile)">
+        <SetTargetFramework>TargetFramework=$(_TargetFramework)</SetTargetFramework>
+        <PublishTargetPath>$(_ProjectName)\$(_TargetFramework)</PublishTargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </PublishProjectReference>
+    </ItemGroup>
+  </Target>
+</Project>

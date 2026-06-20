@@ -1,0 +1,34 @@
+name: ogc-cql2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Ogc.Cql2.sln
+
+      - name: Build
+        run: dotnet build Ogc.Cql2.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Ogc.Cql2.sln -c Release --no-build
+
+      - name: Publish dist artifacts
+        run: dotnet msbuild /p:Configuration=Release Ogc.Cql2.dist.msbuildproj
