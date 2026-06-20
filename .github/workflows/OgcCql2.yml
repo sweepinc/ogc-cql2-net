@@ -57,15 +57,9 @@ jobs:
           path: dist/
 
   test:
-    name: Test (${{ matrix.os }})
+    name: Test
     needs: build
-    runs-on: ${{ matrix.os }}
-    env:
-      VERSION: ${{ needs.build.outputs.semVer }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-24.04, windows-2025, macos-14]
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Source
         uses: actions/checkout@v5
@@ -77,14 +71,14 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
-      - name: Restore
-        run: dotnet restore OgcCql2.slnx
-
-      - name: Build
-        run: dotnet build OgcCql2.slnx -c Release --no-restore /p:Version=${{ env.VERSION }}
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v5
+        with:
+          name: dist
+          path: dist/
 
       - name: Test
-        run: dotnet test OgcCql2.slnx -c Release --no-build --no-restore
+        run: dotnet test dist/tests/OgcCql2.Tests/net10.0/OgcCql2.Tests.dll --no-build
 
   release:
     name: Release
