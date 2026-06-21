@@ -1,0 +1,13 @@
+<Project DefaultTargets="Publish">
+  <PropertyGroup>
+    <DistDir Condition="'$(DistDir)' == ''">$(DISTDIR)</DistDir>
+    <DistDir Condition="'$(DistDir)' == ''">$([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', 'dist'))</DistDir>
+    <DistDir>$([System.IO.Path]::GetFullPath('$(DistDir)'))</DistDir>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+  </PropertyGroup>
+
+  <Target Name="Publish">
+    <MSBuild Projects="src/dist-nuget/dist-nuget.csproj" Targets="Publish" Properties="Configuration=$(Configuration);PublishDir=$(DistDir)/nuget" />
+    <MSBuild Projects="src/dist-tests/dist-tests.csproj" Targets="Publish" Properties="Configuration=$(Configuration);PublishDir=$(DistDir)/tests" />
+  </Target>
+</Project>

@@ -1,0 +1,13 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/src/">
+    <Project Path="src/dist-nuget/dist-nuget.csproj" />
+    <Project Path="src/dist-tests/dist-tests.csproj" />
+    <Project Path="src/OgcCql2.Tests/OgcCql2.Tests.csproj" />
+    <Project Path="src/OgcCql2/OgcCql2.csproj" />
+  </Folder>
+</Solution>

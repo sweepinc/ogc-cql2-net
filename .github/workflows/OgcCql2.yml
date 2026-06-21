@@ -1,0 +1,160 @@
+name: ogc-cql2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types:
+      - created
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.x'
+
+      - name: Execute GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+
+      - name: Restore
+        run: dotnet restore OgcCql2.slnx
+
+      - name: Build
+        run: dotnet build OgcCql2.slnx -c Release --no-restore /p:Version=${{ steps.gitversion.outputs.semVer }} /p:ContinuousIntegrationBuild=true
+
+      - name: Publish dist artifacts
+        run: dotnet msbuild /p:Configuration=Release /p:Version=${{ steps.gitversion.outputs.semVer }} OgcCql2.dist.msbuildproj
+
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: nuget
+          path: dist/nuget
+
+      - name: Package tests
+        run: tar czvf tests.tar.gz tests
+        working-directory: dist
+
+      - name: Upload tests
+        uses: actions/upload-artifact@v5
+        with:
+          name: tests
+          path: dist/tests.tar.gz
+
+  test:
+    strategy:
+      matrix:
+        run:
+          - OgcCql2.Tests
+        sys:
+          - linux-x64
+        tfm:
+          - net10.0
+    name: Test (${{ matrix.run }}:${{ matrix.tfm }}:${{ matrix.sys }})
+    needs: build
+    runs-on: ${{ fromJSON('{"win-x86":["windows-2022"],"win-x64":["windows-2022"],"linux-x64":["ubuntu-24.04"],"linux-arm64":["ubuntu-24.04-arm"],"osx-x64":["macos-15-intel"],"osx-arm64":["macos-15"]}')[matrix.sys] }}
+    steps:
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Download tests
+        uses: actions/download-artifact@v5
+        with:
+          name: tests
+
+      - name: Restore tests
+        run: tar xzvf tests.tar.gz
+
+      - name: Execute tests
+        timeout-minutes: 480
+        shell: pwsh
+        run: |
+          $run = "${{ matrix.run }}"
+          $tfm = "${{ matrix.tfm }}"
+          $sys = "${{ matrix.sys }}"
+
+          $tests = Get-Item ".\tests\$run\$tfm\*.dll"
+
+          if ($tests)
+          {
+            Add-Content $env:GITHUB_ENV "`nRET=TestResults--$run--$tfm--$sys"
+            dotnet test -f $tfm --no-build --results-directory TestResults --logger trx $tests[0].FullName
+          }
+
+      - name: Archive test results
+        if: always() && startsWith(env.RET, 'TestResults--')
+        run: tar czvf TestResults.tar.gz TestResults
+
+      - name: Upload test results
+        if: always() && startsWith(env.RET, 'TestResults--')
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ env.RET }}
+          path: TestResults.tar.gz
+
+  release:
+    name: Release
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 10.0
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install GitVersion
+        uses: gittools/actions/gitversion/setup@v4
+        with:
+          versionSpec: '6.x'
+
+      - name: Execute GitVersion
+        id: gitversion
+        uses: gittools/actions/gitversion/execute@v4
+
+      - name: Download NuGet packages
+        uses: actions/download-artifact@v5
+        with:
+          name: nuget
+          path: dist/nuget
+
+      - name: Create GitHub release
+        if: github.ref_type == 'tag'
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          omitBodyDuringUpdate: true
+          artifacts: dist/nuget/*.nupkg,dist/nuget/*.snupkg
