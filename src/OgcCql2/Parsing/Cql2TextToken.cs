@@ -6,6 +6,7 @@ namespace OgcCql2.Parsing;
 /// </summary>
 readonly ref struct Cql2TextToken
 {
+
     /// <summary>
     /// Initializes a token.
     /// </summary>
@@ -22,4 +23,5 @@ readonly ref struct Cql2TextToken
 
     /// <summary>The matched characters, sliced from the source span.</summary>
     public ReadOnlySpan<char> Text { get; }
+
 }

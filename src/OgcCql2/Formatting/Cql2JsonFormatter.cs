@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+
 using OgcCql2.Expressions;
 using OgcCql2.Geometries;
 
@@ -155,4 +156,5 @@ public static class Cql2JsonFormatter
             _ => throw new ArgumentOutOfRangeException(nameof(op), op, null)
         };
     }
+
 }

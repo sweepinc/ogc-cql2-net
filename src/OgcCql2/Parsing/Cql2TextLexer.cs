@@ -6,6 +6,7 @@ namespace OgcCql2.Parsing;
 /// </summary>
 ref struct Cql2TextLexer
 {
+
     readonly ReadOnlySpan<char> _text;
     int _index;
 
@@ -205,9 +206,9 @@ ref struct Cql2TextLexer
             _index++;
 
         var tag = _text[save.._index];
-        if (tag.Equals(Cql2Syntax.DimensionZ, StringComparison.OrdinalIgnoreCase)
-            || tag.Equals(Cql2Syntax.DimensionM, StringComparison.OrdinalIgnoreCase)
-            || tag.Equals(Cql2Syntax.DimensionZM, StringComparison.OrdinalIgnoreCase))
+        if (tag.Equals(Cql2Syntax.DimensionZ, StringComparison.OrdinalIgnoreCase) ||
+            tag.Equals(Cql2Syntax.DimensionM, StringComparison.OrdinalIgnoreCase) ||
+            tag.Equals(Cql2Syntax.DimensionZM, StringComparison.OrdinalIgnoreCase))
             return;
 
         // not a tag, give the word back
@@ -237,4 +238,5 @@ ref struct Cql2TextLexer
 
         throw new FormatException("Unterminated geometry literal");
     }
+
 }

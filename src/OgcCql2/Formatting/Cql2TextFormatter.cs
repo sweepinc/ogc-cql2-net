@@ -31,16 +31,16 @@ public static class Cql2TextFormatter
     {
         return expression switch
         {
-            Cql2StringExpression str => $"'{EscapeString(str.Value)}'",
+            Cql2StringExpression str => Quote(EscapeString(str.Value)),
             Cql2NumberExpression number => number.Value.ToString(CultureInfo.InvariantCulture),
             Cql2BooleanExpression boolean => boolean.Value ? Cql2Syntax.True : Cql2Syntax.False,
             Cql2PropertyExpression property => property.Name,
-            Cql2ArrayExpression array => $"({string.Join(", ", array.Elements.Select(element => Write(element, 0)))})",
-            Cql2DateExpression date => $"{Cql2Syntax.Date}('{Cql2TemporalText.FormatDate(date.Value)}')",
-            Cql2TimestampExpression timestamp => $"{Cql2Syntax.Timestamp}('{Cql2TemporalText.FormatTimestamp(timestamp.Value)}')",
+            Cql2ArrayExpression array => InParens(string.Join(ListSeparator, array.Elements.Select(element => Write(element, 0)))),
+            Cql2DateExpression date => $"{Cql2Syntax.Date}{InParens(Quote(Cql2TemporalText.FormatDate(date.Value)))}",
+            Cql2TimestampExpression timestamp => $"{Cql2Syntax.Timestamp}{InParens(Quote(Cql2TemporalText.FormatTimestamp(timestamp.Value)))}",
             Cql2IntervalExpression interval => FormatInterval(interval),
             Cql2GeometryExpression geometry => GeometryIo.WriteWkt(geometry.Geometry),
-            Cql2FunctionCallExpression function => $"{function.Name}({string.Join(", ", function.Arguments.Select(arg => Write(arg, 0)))})",
+            Cql2FunctionCallExpression function => $"{function.Name}{InParens(string.Join(ListSeparator, function.Arguments.Select(arg => Write(arg, 0))))}",
             Cql2IsNullExpression isNull => ParenthesizeIfNeeded($"{Write(isNull.Operand, PredicatePrecedence)} {Cql2Syntax.Is} {Cql2Syntax.Null}", PredicatePrecedence, parentPrecedence),
             Cql2UnaryExpression unary => FormatNot(unary, parentPrecedence),
             Cql2BinaryExpression binary => FormatBinary(binary, parentPrecedence),
@@ -54,7 +54,7 @@ public static class Cql2TextFormatter
     /// <param name="interval">The interval expression.</param>
     /// <returns>The formatted interval text.</returns>
     static string FormatInterval(Cql2IntervalExpression interval)
-        => $"{Cql2Syntax.Interval}({FormatIntervalBound(interval.Start)}, {FormatIntervalBound(interval.End)})";
+        => $"{Cql2Syntax.Interval}{InParens($"{FormatIntervalBound(interval.Start)}{ListSeparator}{FormatIntervalBound(interval.End)}")}";
 
     /// <summary>
     /// Formats a single interval bound: <c>'..'</c> when open, a quoted lexical string for date/timestamp
@@ -65,10 +65,10 @@ public static class Cql2TextFormatter
     static string FormatIntervalBound(Cql2Expression? bound)
     {
         if (bound is null)
-            return $"'{Cql2Syntax.OpenBound}'";
+            return Quote(Cql2Syntax.OpenBound);
 
         var instant = Cql2TemporalText.TryFormatInstant(bound);
-        return instant is not null ? $"'{EscapeString(instant)}'" : Write(bound, 0);
+        return instant is not null ? Quote(EscapeString(instant)) : Write(bound, 0);
     }
 
     /// <summary>Precedence assigned to comparison and IS NULL predicates.</summary>
@@ -119,7 +119,7 @@ public static class Cql2TextFormatter
     /// <returns>The original or parenthesized expression text.</returns>
     static string ParenthesizeIfNeeded(string text, int currentPrecedence, int parentPrecedence)
     {
-        return currentPrecedence < parentPrecedence ? $"({text})" : text;
+        return currentPrecedence < parentPrecedence ? InParens(text) : text;
     }
 
     /// <summary>
@@ -162,10 +162,33 @@ public static class Cql2TextFormatter
         };
     }
 
+    /// <summary>The rendered separator between array elements and function arguments.</summary>
+    static readonly string ListSeparator = $"{Cql2Syntax.Comma} ";
+
+    /// <summary>The CQL2 single-quote string delimiter, as text.</summary>
+    static readonly string SingleQuoteText = Cql2Syntax.SingleQuote.ToString();
+
+    /// <summary>The escaped (doubled) single-quote sequence, as text.</summary>
+    static readonly string EscapedSingleQuoteText = SingleQuoteText + SingleQuoteText;
+
+    /// <summary>
+    /// Wraps a value in single quotes.
+    /// </summary>
+    /// <param name="value">The value to quote.</param>
+    /// <returns>The quoted text.</returns>
+    static string Quote(string value) => $"{Cql2Syntax.SingleQuote}{value}{Cql2Syntax.SingleQuote}";
+
+    /// <summary>
+    /// Wraps text in parentheses.
+    /// </summary>
+    /// <param name="inner">The text to wrap.</param>
+    /// <returns>The parenthesized text.</returns>
+    static string InParens(string inner) => $"{Cql2Syntax.LeftParen}{inner}{Cql2Syntax.RightParen}";
+
     /// <summary>
     /// Escapes single quotes within a CQL2 character string by doubling them.
     /// </summary>
     /// <param name="value">The raw string value.</param>
     /// <returns>The escaped string.</returns>
-    static string EscapeString(string value) => value.Replace("'", "''", StringComparison.Ordinal);
+    static string EscapeString(string value) => value.Replace(SingleQuoteText, EscapedSingleQuoteText, StringComparison.Ordinal);
 }

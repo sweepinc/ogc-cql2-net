@@ -17,6 +17,7 @@ namespace OgcCql2.Parsing;
 /// </remarks>
 public ref struct Cql2TextParser
 {
+
     Cql2TextLexer _lexer;
     Cql2TextToken _current;
 
@@ -344,4 +345,5 @@ public ref struct Cql2TextParser
     /// Advances to the next token.
     /// </summary>
     void Advance() => _current = _lexer.Next();
+
 }

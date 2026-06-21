@@ -1,6 +1,4 @@
-using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Text;
 using System.Text.Json;
@@ -15,6 +13,7 @@ namespace OgcCql2.Parsing;
 /// </summary>
 public static class Cql2JsonParser
 {
+
     /// <summary>
     /// Parses a CQL2 JSON expression from a UTF-16 JSON string.
     /// </summary>
@@ -303,4 +302,5 @@ public static class Cql2JsonParser
 
         throw new FormatException("Unexpected end of JSON while reading 'interval' array.");
     }
+
 }

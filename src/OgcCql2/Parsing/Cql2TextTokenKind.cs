@@ -5,6 +5,7 @@ namespace OgcCql2.Parsing;
 /// </summary>
 enum Cql2TextTokenKind
 {
+
     End,
     Identifier,
     String,
@@ -26,4 +27,5 @@ enum Cql2TextTokenKind
     Or,
     Not,
     Is
+
 }

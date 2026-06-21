@@ -1,10 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Description>A .NET library for parsing, formatting, and round-tripping OGC CQL2 filter expressions in both CQL2-Text and CQL2-JSON.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>ogc;cql2;cql;filter;query;geospatial;parser;nettopologysuite</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="NetTopologySuite" Version="2.6.0" />

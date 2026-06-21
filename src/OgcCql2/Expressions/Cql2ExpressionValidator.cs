@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-using OgcCql2.Expressions;
-
-namespace OgcCql2;
+namespace OgcCql2.Expressions;
 
 /// <summary>
 /// Validates CQL2 expression trees for structural correctness.
