@@ -43,10 +43,29 @@ jobs:
         run: dotnet restore OgcCql2.slnx
 
       - name: Build
-        run: dotnet build OgcCql2.slnx -c Release --no-restore /p:Version=${{ steps.gitversion.outputs.semVer }} /p:ContinuousIntegrationBuild=true
+        run: |
+          dotnet msbuild /m /bl \
+            /p:Configuration="Release" \
+            /p:Platform="Any CPU" \
+            /p:PreReleaseLabel=${GitVersion_PreReleaseLabel} \
+            /p:PreReleaseNumber=${GitVersion_WeightedPreReleaseNumber} \
+            /p:Version=${GitVersion_FullSemVer} \
+            /p:AssemblyVersion=${GitVersion_AssemblySemVer} \
+            /p:InformationalVersion=${GitVersion_InformationalVersion} \
+            /p:FileVersion=${GitVersion_AssemblySemFileVer} \
+            /p:PackageVersion=${GitVersion_FullSemVer} \
+            /p:RepositoryUrl="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git" \
+            /p:PackageProjectUrl="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+            /p:BuildInParallel=true \
+            /p:ContinuousIntegrationBuild=true \
+            OgcCql2.dist.msbuildproj
 
-      - name: Publish dist artifacts
-        run: dotnet msbuild /p:Configuration=Release /p:Version=${{ steps.gitversion.outputs.semVer }} OgcCql2.dist.msbuildproj
+      - name: Upload MSBuild Log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: msbuild.binlog
+          path: msbuild.binlog
 
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v5
@@ -98,7 +117,7 @@ jobs:
           $tfm = "${{ matrix.tfm }}"
           $sys = "${{ matrix.sys }}"
 
-          $tests = Get-Item ".\tests\$run\$tfm\*.dll"
+          $tests = Get-Item ".\tests\$run\$tfm\*.Tests.dll"
 
           if ($tests)
           {
@@ -157,4 +176,22 @@ jobs:
         with:
           allowUpdates: true
           omitBodyDuringUpdate: true
+          makeLatest: true
           artifacts: dist/nuget/*.nupkg,dist/nuget/*.snupkg
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push NuGet (GitHub)
+        if: github.event_name != 'pull_request'
+        shell: pwsh
+        run: dotnet nuget push dist/nuget/*.nupkg --source $env:GITHUB_REPOS --api-key $env:GITHUB_TOKEN --skip-duplicate
+        env:
+          GITHUB_REPOS: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push NuGet
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        run: dotnet nuget push dist/nuget/*.nupkg --source $env:NUGET_REPOS --api-key $env:NUGET_TOKEN --skip-duplicate
+        env:
+          NUGET_REPOS: https://api.nuget.org/v3/index.json
+          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
