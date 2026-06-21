@@ -144,6 +144,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      id-token: write   # required for NuGet.org Trusted Publishing (OIDC)
     steps:
       - name: Checkout Source
         uses: actions/checkout@v5
@@ -188,10 +189,17 @@ jobs:
           GITHUB_REPOS: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: NuGet Login (Trusted Publishing)
+        if: github.ref_type == 'tag'
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: jhaltom
+
       - name: Push NuGet
         if: github.ref_type == 'tag'
         shell: pwsh
-        run: dotnet nuget push dist/nuget/*.nupkg --source $env:NUGET_REPOS --api-key $env:NUGET_TOKEN --skip-duplicate
+        run: dotnet nuget push dist/nuget/*.nupkg --source $env:NUGET_REPOS --api-key $env:NUGET_API_KEY --skip-duplicate
         env:
           NUGET_REPOS: https://api.nuget.org/v3/index.json
-          NUGET_TOKEN: ${{ secrets.NUGET_TOKEN }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
