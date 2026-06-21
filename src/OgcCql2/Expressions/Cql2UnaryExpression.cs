@@ -7,6 +7,7 @@ namespace OgcCql2.Expressions;
 /// <param name="Operand">The operand expression.</param>
 public sealed record Cql2UnaryExpression(Cql2UnaryOperator Operator, Cql2Expression Operand) : Cql2Expression
 {
+
     /// <summary>
     /// Accepts a visitor.
     /// </summary>
@@ -14,4 +15,5 @@ public sealed record Cql2UnaryExpression(Cql2UnaryOperator Operator, Cql2Express
     /// <param name="visitor">The visitor instance.</param>
     /// <returns>The visitor result.</returns>
     public override T Accept<T>(ICqlExpressionVisitor<T> visitor) => visitor.VisitUnary(this);
+
 }

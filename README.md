@@ -8,8 +8,13 @@ It provides:
 - A typed expression tree (AST)
 - CQL2-text parsing and formatting
 - CQL2-JSON parsing and formatting
+- Boolean logic (`AND`/`OR`/`NOT`), comparisons, and the `IS [NOT] NULL` predicate
+- Scalar literals (string, number, boolean), temporal literals (`DATE`, `TIMESTAMP`, `INTERVAL`), arrays, and spatial literals (WKT / GeoJSON)
 - Visitor-based traversal for custom processing
 - Stable round-tripping across text, JSON, and AST
+
+Spatial literals are represented as [NetTopologySuite](https://github.com/NetTopologySuite/NetTopologySuite)
+geometries: WKT is parsed/written for CQL2-Text and GeoJSON for CQL2-JSON.
 
 ## Installation
 
@@ -20,7 +25,7 @@ dotnet add package OgcCql2
 ## Quick start
 
 ```csharp
-using OgcCql2;
+using OgcCql2.Formatting;
 using OgcCql2.Parsing;
 
 var textExpression = Cql2TextParser.Parse("foo = 1 AND NOT bar >= 10");
@@ -70,13 +75,22 @@ var canonicalJson = Cql2JsonFormatter.Format(expression);
 
 ## Expression model
 
-The AST is rooted at `Cql2Expression` with concrete node types:
+The AST is rooted at `Cql2Expression`. Constant literals derive from the abstract
+`Cql2LiteralExpression` base (`Cql2StringExpression`, `Cql2NumberExpression`, `Cql2BooleanExpression`,
+`Cql2DateExpression`, `Cql2TimestampExpression`, `Cql2GeometryExpression`); composite forms that may
+contain non-constant sub-expressions (intervals, arrays) derive from `Cql2Expression` directly.
 
-- `Cql2LiteralExpression`
+Concrete node types:
+
+- `Cql2StringExpression`, `Cql2NumberExpression` (`decimal`), `Cql2BooleanExpression` (CQL2 has no null literal)
 - `Cql2PropertyExpression`
 - `Cql2UnaryExpression`
 - `Cql2BinaryExpression`
-- `Cql2FunctionCallExpression`
+- `Cql2FunctionCallExpression` (`ImmutableArray` arguments; function names are open-ended)
+- `Cql2IsNullExpression`
+- `Cql2ArrayExpression` (`ImmutableArray` of element expressions)
+- `Cql2DateExpression` (`DateOnly`), `Cql2TimestampExpression` (`DateTimeOffset`, UTC), `Cql2IntervalExpression` (nullable expression bounds; `null` = open `..`)
+- `Cql2GeometryExpression` (wraps a NetTopologySuite `Geometry`)
 
 Operators are represented by:
 
@@ -90,20 +104,36 @@ Traversal uses:
 ## Visitor example
 
 ```csharp
-using OgcCql2;
+using OgcCql2.Expressions;
 
 sealed class NodeCountingVisitor : ICqlExpressionVisitor<int>
 {
-    public int VisitLiteral(Cql2LiteralExpression expression) => 1;
+    public int VisitString(Cql2StringExpression expression) => 1;
+    public int VisitNumber(Cql2NumberExpression expression) => 1;
+    public int VisitBoolean(Cql2BooleanExpression expression) => 1;
     public int VisitProperty(Cql2PropertyExpression expression) => 1;
     public int VisitUnary(Cql2UnaryExpression expression) => 1 + expression.Operand.Accept(this);
     public int VisitBinary(Cql2BinaryExpression expression) => 1 + expression.Left.Accept(this) + expression.Right.Accept(this);
+    public int VisitIsNull(Cql2IsNullExpression expression) => 1 + expression.Operand.Accept(this);
+    public int VisitDate(Cql2DateExpression expression) => 1;
+    public int VisitTimestamp(Cql2TimestampExpression expression) => 1;
+    public int VisitInterval(Cql2IntervalExpression expression) => 1;
+    public int VisitGeometry(Cql2GeometryExpression expression) => 1;
 
     public int VisitFunctionCall(Cql2FunctionCallExpression expression)
     {
         var count = 1;
         foreach (var argument in expression.Arguments)
             count += argument.Accept(this);
+
+        return count;
+    }
+
+    public int VisitArray(Cql2ArrayExpression expression)
+    {
+        var count = 1;
+        foreach (var element in expression.Elements)
+            count += element.Accept(this);
 
         return count;
     }

@@ -7,8 +7,9 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using OgcCql2.Expressions;
+using OgcCql2.Geometries;
 
-namespace OgcCql2;
+namespace OgcCql2.Formatting;
 
 /// <summary>
 /// Formats expression nodes into canonical CQL2 JSON.
@@ -45,8 +46,23 @@ public static class Cql2JsonFormatter
     {
         return expression switch
         {
-            Cql2LiteralExpression literal => ToLiteralNode(literal.Value),
+            Cql2StringExpression str => JsonValue.Create(str.Value),
+            Cql2NumberExpression number => JsonValue.Create(number.Value),
+            Cql2BooleanExpression boolean => JsonValue.Create(boolean.Value),
             Cql2PropertyExpression property => new JsonObject { ["property"] = property.Name },
+            Cql2ArrayExpression array => new JsonArray(array.Elements.Select(ToNode).ToArray()),
+            Cql2DateExpression date => new JsonObject { ["date"] = Cql2TemporalText.FormatDate(date.Value) },
+            Cql2TimestampExpression timestamp => new JsonObject { ["timestamp"] = Cql2TemporalText.FormatTimestamp(timestamp.Value) },
+            Cql2IntervalExpression interval => new JsonObject
+            {
+                ["interval"] = new JsonArray(IntervalBoundNode(interval.Start), IntervalBoundNode(interval.End))
+            },
+            Cql2GeometryExpression geometry => GeometryIo.WriteGeoJson(geometry.Geometry),
+            Cql2IsNullExpression isNull => new JsonObject
+            {
+                ["op"] = "isNull",
+                ["args"] = new JsonArray(ToNode(isNull.Operand))
+            },
             Cql2UnaryExpression unary => new JsonObject
             {
                 ["op"] = "not",
@@ -107,21 +123,18 @@ public static class Cql2JsonFormatter
     }
 
     /// <summary>
-    /// Converts a literal value to a JSON node.
+    /// Converts an interval bound to its JSON node: <c>".."</c> for an open bound, a lexical date or
+    /// timestamp string for an instant, or the bound's expression node for property/function bounds.
     /// </summary>
-    /// <param name="value">The literal value.</param>
+    /// <param name="bound">The bound expression, or <see langword="null"/> when open.</param>
     /// <returns>The JSON node representation.</returns>
-    static JsonNode ToLiteralNode(object? value)
+    static JsonNode IntervalBoundNode(Cql2Expression? bound)
     {
-        return value switch
-        {
-            null => JsonValue.Create((string?)null)!,
-            bool boolean => JsonValue.Create(boolean)!,
-            string text => JsonValue.Create(text)!,
-            sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal => JsonValue.Create(value)!,
-            IReadOnlyList<object?> list => new JsonArray(list.Select(ToLiteralNode).ToArray()),
-            _ => throw new NotSupportedException($"Unsupported literal type: {value.GetType().Name}")
-        };
+        if (bound is null)
+            return JsonValue.Create(Cql2Syntax.OpenBound);
+
+        var instant = Cql2TemporalText.TryFormatInstant(bound);
+        return instant is not null ? JsonValue.Create(instant) : ToNode(bound);
     }
 
     /// <summary>

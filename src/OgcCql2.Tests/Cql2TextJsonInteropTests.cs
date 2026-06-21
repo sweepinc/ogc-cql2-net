@@ -1,4 +1,5 @@
 using Xunit;
+using OgcCql2.Formatting;
 using OgcCql2.Parsing;
 
 namespace OgcCql2.Tests;
@@ -14,9 +15,10 @@ public class Cql2TextJsonInteropTests
     [Fact]
     public void Text_And_Json_RoundTrip_ToSameCanonicalText()
     {
-        // Use explicit parentheses so NOT applies to the whole comparison, not just the property.
-        const string text = "foo = 1 AND NOT (bar >= 10)";
-        const string expectedCanonical = "foo = 1 AND NOT (bar >= 10)";
+        // NOT binds looser than comparison (booleanFactor = ["NOT"] booleanPrimary),
+        // so it applies to the whole comparison without needing parentheses.
+        const string text = "foo = 1 AND NOT bar >= 10";
+        const string expectedCanonical = "foo = 1 AND NOT bar >= 10";
 
         var fromText = Cql2TextParser.Parse(text);
         var asJson = Cql2JsonFormatter.Format(fromText);

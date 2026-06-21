@@ -1,9 +1,25 @@
 namespace OgcCql2.Parsing;
 
 /// <summary>
-/// Immutable token value returned by the lexer.
+/// A lexer token referencing a slice of the source span. Purely lexical: the token carries its
+/// kind and the matched characters; value conversion happens in the parser.
 /// </summary>
-/// <param name="Kind">The token kind.</param>
-/// <param name="Text">The token text.</param>
-/// <param name="Value">The parsed literal value, when applicable.</param>
-readonly record struct Cql2TextToken(Cql2TextTokenKind Kind, string Text, object? Value = null);
+readonly ref struct Cql2TextToken
+{
+    /// <summary>
+    /// Initializes a token.
+    /// </summary>
+    /// <param name="kind">The token kind.</param>
+    /// <param name="text">The slice of source text the token spans.</param>
+    public Cql2TextToken(Cql2TextTokenKind kind, ReadOnlySpan<char> text)
+    {
+        Kind = kind;
+        Text = text;
+    }
+
+    /// <summary>The token kind.</summary>
+    public Cql2TextTokenKind Kind { get; }
+
+    /// <summary>The matched characters, sliced from the source span.</summary>
+    public ReadOnlySpan<char> Text { get; }
+}

@@ -1,4 +1,5 @@
 using Xunit;
+using OgcCql2.Formatting;
 using OgcCql2.Parsing;
 
 namespace OgcCql2.Tests;
@@ -30,8 +31,20 @@ public class Cql2JsonRoundTripTests
         """{"op":"=","args":[{"property":"active"},true]}""",
         """{"op":"=","args":[{"property":"active"},true]}""")]
     [InlineData(
-        """{"op":"=","args":[{"property":"tag"},null]}""",
-        """{"op":"=","args":[{"property":"tag"},null]}""")]
+        """{"op":"isNull","args":[{"property":"tag"}]}""",
+        """{"op":"isNull","args":[{"property":"tag"}]}""")]
+    [InlineData(
+        """{"op":">","args":[{"property":"ts"},{"timestamp":"2020-01-01T00:00:00Z"}]}""",
+        """{"op":">","args":[{"property":"ts"},{"timestamp":"2020-01-01T00:00:00Z"}]}""")]
+    [InlineData(
+        """{"op":"=","args":[{"property":"d"},{"date":"2020-01-01"}]}""",
+        """{"op":"=","args":[{"property":"d"},{"date":"2020-01-01"}]}""")]
+    [InlineData(
+        """{"op":"a_containedby","args":[{"property":"foo"},["a","b","c"]]}""",
+        """{"op":"a_containedby","args":[{"property":"foo"},["a","b","c"]]}""")]
+    [InlineData(
+        """{"op":"t_intersects","args":[{"property":"event"},{"interval":["2020-01-01",".."]}]}""",
+        """{"op":"t_intersects","args":[{"property":"event"},{"interval":["2020-01-01",".."]}]}""")]
     public void Json_RoundTrip_ProducesExpectedCanonicalJson(string json, string expectedCanonical)
     {
         var expression = Cql2JsonParser.Parse(json);

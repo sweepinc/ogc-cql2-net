@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+
 using OgcCql2.Expressions;
 
 namespace OgcCql2;
@@ -9,6 +10,7 @@ namespace OgcCql2;
 /// </summary>
 public static class Cql2ExpressionValidator
 {
+
     /// <summary>
     /// Validates an expression tree and throws when it contains unsupported or malformed nodes/values.
     /// </summary>
@@ -45,8 +47,13 @@ public static class Cql2ExpressionValidator
     {
         switch (expression)
         {
-            case Cql2LiteralExpression literal:
-                ValidateLiteralValue(literal.Value, $"{path}.literal");
+            case Cql2StringExpression str:
+                if (str.Value is null)
+                    throw new FormatException($"String literal value is required at {path}.");
+
+                return;
+            case Cql2NumberExpression:
+            case Cql2BooleanExpression:
                 return;
             case Cql2PropertyExpression property:
                 if (string.IsNullOrWhiteSpace(property.Name))
@@ -72,6 +79,45 @@ public static class Cql2ExpressionValidator
             case Cql2FunctionCallExpression function:
                 ValidateFunction(function, path, knownFunctions);
                 return;
+            case Cql2IsNullExpression isNull:
+                if (isNull.Operand is null)
+                    throw new FormatException($"IS NULL operand is required at {path}.");
+
+                ValidateExpression(isNull.Operand, $"{path}.operand", knownFunctions);
+                return;
+            case Cql2ArrayExpression array:
+                if (array.Elements.IsDefault)
+                    throw new FormatException($"Array elements are required at {path}.");
+
+                for (var i = 0; i < array.Elements.Length; i++)
+                {
+                    var element = array.Elements[i];
+                    if (element is null)
+                        throw new FormatException($"Array element is required at {path}[{i}].");
+
+                    ValidateExpression(element, $"{path}[{i}]", knownFunctions);
+                }
+
+                return;
+            case Cql2DateExpression:
+            case Cql2TimestampExpression:
+                return;
+            case Cql2IntervalExpression interval:
+                if (interval.Start is null && interval.End is null)
+                    throw new FormatException($"An interval must have at least one bounded end at {path}.");
+
+                if (interval.Start is not null)
+                    ValidateExpression(interval.Start, $"{path}.start", knownFunctions);
+
+                if (interval.End is not null)
+                    ValidateExpression(interval.End, $"{path}.end", knownFunctions);
+
+                return;
+            case Cql2GeometryExpression geometry:
+                if (geometry.Geometry is null)
+                    throw new FormatException($"Geometry value is required at {path}.");
+
+                return;
             default:
                 throw new FormatException($"Unsupported expression node type '{expression.GetType().Name}' at {path}.");
         }
@@ -91,10 +137,10 @@ public static class Cql2ExpressionValidator
         if (knownFunctions is not null && !knownFunctions.Contains(function.Name))
             throw new FormatException($"Unknown function '{function.Name}' at {path}.");
 
-        if (function.Arguments is null)
+        if (function.Arguments.IsDefault)
             throw new FormatException($"Function arguments are required at {path}.");
 
-        for (var i = 0; i < function.Arguments.Count; i++)
+        for (var i = 0; i < function.Arguments.Length; i++)
         {
             var argument = function.Arguments[i];
             if (argument is null)
@@ -104,56 +150,4 @@ public static class Cql2ExpressionValidator
         }
     }
 
-    /// <summary>
-    /// Validates a literal value recursively against CQL2 literal kinds.
-    /// </summary>
-    /// <param name="value">The literal value.</param>
-    /// <param name="path">The logical path used in error messages.</param>
-    static void ValidateLiteralValue(object? value, string path)
-    {
-        if (value is null)
-            return;
-
-        if (value is bool or string)
-            return;
-
-        if (IsCql2Number(value))
-            return;
-
-        if (value is IReadOnlyList<object?> list)
-        {
-            for (var i = 0; i < list.Count; i++)
-                ValidateLiteralValue(list[i], $"{path}[{i}]");
-
-            return;
-        }
-
-        throw new FormatException(
-            $"Unsupported literal value type '{value.GetType().Name}' at {path}. " +
-            "Supported CQL2 literal kinds are null, boolean, string, number, and arrays.");
-    }
-
-    /// <summary>
-    /// Determines whether a CLR value can represent a CQL2 number literal.
-    /// </summary>
-    /// <param name="value">The value to inspect.</param>
-    /// <returns><see langword="true"/> when the value is a numeric CLR primitive; otherwise <see langword="false"/>.</returns>
-    static bool IsCql2Number(object value)
-    {
-        return Type.GetTypeCode(value.GetType()) switch
-        {
-            TypeCode.SByte or
-            TypeCode.Byte or
-            TypeCode.Int16 or
-            TypeCode.UInt16 or
-            TypeCode.Int32 or
-            TypeCode.UInt32 or
-            TypeCode.Int64 or
-            TypeCode.UInt64 or
-            TypeCode.Single or
-            TypeCode.Double or
-            TypeCode.Decimal => true,
-            _ => false
-        };
-    }
 }

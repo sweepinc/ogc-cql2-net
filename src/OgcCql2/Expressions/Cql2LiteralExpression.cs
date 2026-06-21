@@ -1,16 +1,13 @@
 namespace OgcCql2.Expressions;
 
 /// <summary>
-/// Represents a literal value node.
+/// Base type for CQL2 literal expressions — constant scalar, temporal-instant, and spatial values.
 /// </summary>
-/// <param name="Value">The literal value.</param>
-public sealed record Cql2LiteralExpression(object? Value) : Cql2Expression
-{
-    /// <summary>
-    /// Accepts a visitor.
-    /// </summary>
-    /// <typeparam name="T">The visitor return type.</typeparam>
-    /// <param name="visitor">The visitor instance.</param>
-    /// <returns>The visitor result.</returns>
-    public override T Accept<T>(ICqlExpressionVisitor<T> visitor) => visitor.VisitLiteral(this);
-}
+/// <remarks>
+/// Concrete literals are <see cref="Cql2StringExpression"/>, <see cref="Cql2NumberExpression"/>,
+/// <see cref="Cql2BooleanExpression"/>, <see cref="Cql2DateExpression"/>,
+/// <see cref="Cql2TimestampExpression"/>, and <see cref="Cql2GeometryExpression"/>.
+/// Composite forms whose parts may be non-constant expressions — intervals and arrays — are not
+/// literals and derive from <see cref="Cql2Expression"/> directly.
+/// </remarks>
+public abstract record Cql2LiteralExpression : Cql2Expression;

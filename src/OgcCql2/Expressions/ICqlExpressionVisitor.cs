@@ -7,11 +7,25 @@ namespace OgcCql2.Expressions;
 public interface ICqlExpressionVisitor<T>
 {
     /// <summary>
-    /// Visits a literal expression.
+    /// Visits a string literal expression.
     /// </summary>
-    /// <param name="expression">The literal expression.</param>
+    /// <param name="expression">The string expression.</param>
     /// <returns>The visitor result.</returns>
-    T VisitLiteral(Cql2LiteralExpression expression);
+    T VisitString(Cql2StringExpression expression);
+
+    /// <summary>
+    /// Visits a numeric literal expression.
+    /// </summary>
+    /// <param name="expression">The number expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitNumber(Cql2NumberExpression expression);
+
+    /// <summary>
+    /// Visits a boolean literal expression.
+    /// </summary>
+    /// <param name="expression">The boolean expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitBoolean(Cql2BooleanExpression expression);
 
     /// <summary>
     /// Visits a property expression.
@@ -40,4 +54,46 @@ public interface ICqlExpressionVisitor<T>
     /// <param name="expression">The function call expression.</param>
     /// <returns>The visitor result.</returns>
     T VisitFunctionCall(Cql2FunctionCallExpression expression);
+
+    /// <summary>
+    /// Visits an array expression.
+    /// </summary>
+    /// <param name="expression">The array expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitArray(Cql2ArrayExpression expression);
+
+    /// <summary>
+    /// Visits a date literal expression.
+    /// </summary>
+    /// <param name="expression">The date expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitDate(Cql2DateExpression expression);
+
+    /// <summary>
+    /// Visits a timestamp literal expression.
+    /// </summary>
+    /// <param name="expression">The timestamp expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitTimestamp(Cql2TimestampExpression expression);
+
+    /// <summary>
+    /// Visits an interval literal expression.
+    /// </summary>
+    /// <param name="expression">The interval expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitInterval(Cql2IntervalExpression expression);
+
+    /// <summary>
+    /// Visits a geometry literal expression.
+    /// </summary>
+    /// <param name="expression">The geometry expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitGeometry(Cql2GeometryExpression expression);
+
+    /// <summary>
+    /// Visits an <c>IS NULL</c> predicate expression.
+    /// </summary>
+    /// <param name="expression">The is-null expression.</param>
+    /// <returns>The visitor result.</returns>
+    T VisitIsNull(Cql2IsNullExpression expression);
 }

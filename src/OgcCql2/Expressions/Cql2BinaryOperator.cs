@@ -5,6 +5,7 @@ namespace OgcCql2.Expressions;
 /// </summary>
 public enum Cql2BinaryOperator
 {
+
     /// <summary>
     /// Logical conjunction.
     /// </summary>
@@ -44,4 +45,5 @@ public enum Cql2BinaryOperator
     /// Greater-than-or-equal comparison.
     /// </summary>
     GreaterThanOrEqual
+
 }

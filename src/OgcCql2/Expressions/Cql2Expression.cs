@@ -5,6 +5,7 @@ namespace OgcCql2.Expressions;
 /// </summary>
 public abstract record Cql2Expression
 {
+
     /// <summary>
     /// Accepts a visitor and dispatches to the expression-specific visit method.
     /// </summary>
@@ -12,4 +13,5 @@ public abstract record Cql2Expression
     /// <param name="visitor">The visitor instance.</param>
     /// <returns>The value returned by the visitor.</returns>
     public abstract T Accept<T>(ICqlExpressionVisitor<T> visitor);
+
 }

@@ -1,10 +1,10 @@
 namespace OgcCql2.Expressions;
 
 /// <summary>
-/// Represents a property reference node.
+/// Represents a CQL2 character string literal.
 /// </summary>
-/// <param name="Name">The property name.</param>
-public sealed record Cql2PropertyExpression(string Name) : Cql2Expression
+/// <param name="Value">The string value.</param>
+public sealed record Cql2StringExpression(string Value) : Cql2LiteralExpression
 {
 
     /// <summary>
@@ -13,6 +13,6 @@ public sealed record Cql2PropertyExpression(string Name) : Cql2Expression
     /// <typeparam name="T">The visitor return type.</typeparam>
     /// <param name="visitor">The visitor instance.</param>
     /// <returns>The visitor result.</returns>
-    public override T Accept<T>(ICqlExpressionVisitor<T> visitor) => visitor.VisitProperty(this);
+    public override T Accept<T>(ICqlExpressionVisitor<T> visitor) => visitor.VisitString(this);
 
 }

@@ -12,6 +12,7 @@ enum Cql2TextTokenKind
     True,
     False,
     Null,
+    Geometry,
     LeftParen,
     RightParen,
     Comma,
@@ -23,5 +24,6 @@ enum Cql2TextTokenKind
     GreaterOrEqual,
     And,
     Or,
-    Not
+    Not,
+    Is
 }
