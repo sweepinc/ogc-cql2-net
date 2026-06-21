@@ -22,6 +22,35 @@ public class Cql2ExpressionValidatorTests
     }
 
     /// <summary>
+    /// Verifies that a null expression throws an ArgumentNullException.
+    /// </summary>
+    [Fact]
+    public void Validate_NullExpression_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => Cql2ExpressionValidator.Validate(null!));
+    }
+
+    /// <summary>
+    /// Verifies that a null expression with known functions throws an ArgumentNullException.
+    /// </summary>
+    [Fact]
+    public void Validate_NullExpressionWithFunctions_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() => Cql2ExpressionValidator.Validate(null!, new[] { "contains" }));
+    }
+
+    /// <summary>
+    /// Verifies that passing null for the knownFunctions argument throws an ArgumentNullException.
+    /// </summary>
+    [Fact]
+    public void Validate_NullKnownFunctions_ThrowsArgumentNullException()
+    {
+        var expression = new Cql2PropertyExpression("foo");
+
+        Assert.Throws<ArgumentNullException>(() => Cql2ExpressionValidator.Validate(expression, null!));
+    }
+
+    /// <summary>
     /// Verifies that a property expression must include a name.
     /// </summary>
     [Fact]

@@ -1,6 +1,10 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using OgcCql2.Expressions;
 
@@ -11,6 +15,11 @@ namespace OgcCql2;
 /// </summary>
 public static class Cql2JsonFormatter
 {
+    static readonly JsonWriterOptions s_writerOptions = new()
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
     /// <summary>
     /// Formats an expression as canonical CQL2 JSON.
     /// </summary>
@@ -19,7 +28,12 @@ public static class Cql2JsonFormatter
     public static string Format(Cql2Expression expression)
     {
         ArgumentNullException.ThrowIfNull(expression);
-        return ToNode(expression).ToJsonString();
+        var node = ToNode(expression);
+        var buffer = new ArrayBufferWriter<byte>();
+        using var writer = new Utf8JsonWriter(buffer, s_writerOptions);
+        node.WriteTo(writer);
+        writer.Flush();
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
     }
 
     /// <summary>

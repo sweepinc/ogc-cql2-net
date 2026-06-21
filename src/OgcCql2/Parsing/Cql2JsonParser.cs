@@ -43,15 +43,22 @@ public static class Cql2JsonParser
     /// <returns>The parsed expression tree.</returns>
     public static Cql2Expression Parse(ReadOnlySpan<byte> utf8Json)
     {
-        var reader = new Utf8JsonReader(utf8Json);
-        if (!reader.Read())
-            throw new FormatException("JSON input is empty.");
+        try
+        {
+            var reader = new Utf8JsonReader(utf8Json);
+            if (!reader.Read())
+                throw new FormatException("JSON input is empty.");
 
-        var expression = ParseExpression(ref reader);
-        if (reader.Read())
-            throw new FormatException("Unexpected trailing JSON content.");
+            var expression = ParseExpression(ref reader);
+            if (reader.Read())
+                throw new FormatException("Unexpected trailing JSON content.");
 
-        return expression;
+            return expression;
+        }
+        catch (JsonException ex)
+        {
+            throw new FormatException(ex.Message, ex);
+        }
     }
 
     /// <summary>
@@ -145,12 +152,19 @@ public static class Cql2JsonParser
             "and" => ParseNaryBinary(Cql2BinaryOperator.And, args),
             "or" => ParseNaryBinary(Cql2BinaryOperator.Or, args),
             "not" when args.Count == 1 => new Cql2UnaryExpression(Cql2UnaryOperator.Not, args[0]),
+            "not" => throw new FormatException($"Operator 'not' requires exactly 1 argument but received {args.Count}."),
             "=" when args.Count == 2 => new Cql2BinaryExpression(Cql2BinaryOperator.Equal, args[0], args[1]),
+            "=" => throw new FormatException($"Operator '=' requires exactly 2 arguments but received {args.Count}."),
             "<>" when args.Count == 2 => new Cql2BinaryExpression(Cql2BinaryOperator.NotEqual, args[0], args[1]),
+            "<>" => throw new FormatException($"Operator '<>' requires exactly 2 arguments but received {args.Count}."),
             "<" when args.Count == 2 => new Cql2BinaryExpression(Cql2BinaryOperator.LessThan, args[0], args[1]),
+            "<" => throw new FormatException($"Operator '<' requires exactly 2 arguments but received {args.Count}."),
             "<=" when args.Count == 2 => new Cql2BinaryExpression(Cql2BinaryOperator.LessThanOrEqual, args[0], args[1]),
+            "<=" => throw new FormatException($"Operator '<=' requires exactly 2 arguments but received {args.Count}."),
             ">" when args.Count == 2 => new Cql2BinaryExpression(Cql2BinaryOperator.GreaterThan, args[0], args[1]),
+            ">" => throw new FormatException($"Operator '>' requires exactly 2 arguments but received {args.Count}."),
             ">=" when args.Count == 2 => new Cql2BinaryExpression(Cql2BinaryOperator.GreaterThanOrEqual, args[0], args[1]),
+            ">=" => throw new FormatException($"Operator '>=' requires exactly 2 arguments but received {args.Count}."),
             _ => new Cql2FunctionCallExpression(op, args)
         };
     }

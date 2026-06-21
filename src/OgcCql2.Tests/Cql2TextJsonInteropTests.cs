@@ -14,12 +14,33 @@ public class Cql2TextJsonInteropTests
     [Fact]
     public void Text_And_Json_RoundTrip_ToSameCanonicalText()
     {
-        const string text = "foo = 1 AND NOT bar >= 10";
+        // Use explicit parentheses so NOT applies to the whole comparison, not just the property.
+        const string text = "foo = 1 AND NOT (bar >= 10)";
+        const string expectedCanonical = "foo = 1 AND NOT (bar >= 10)";
 
         var fromText = Cql2TextParser.Parse(text);
         var asJson = Cql2JsonFormatter.Format(fromText);
         var fromJson = Cql2JsonParser.Parse(asJson);
 
-        Assert.Equal(Cql2TextFormatter.Format(fromText), Cql2TextFormatter.Format(fromJson));
+        var canonicalFromText = Cql2TextFormatter.Format(fromText);
+        var canonicalFromJson = Cql2TextFormatter.Format(fromJson);
+
+        Assert.Equal(expectedCanonical, canonicalFromText);
+        Assert.Equal(canonicalFromText, canonicalFromJson);
+    }
+
+    /// <summary>
+    /// Verifies that a JSON expression converts to the expected CQL2 text.
+    /// </summary>
+    [Fact]
+    public void Json_Converts_ToExpectedCanonicalText()
+    {
+        const string json = """{"op":"=","args":[{"property":"foo"},1]}""";
+        const string expectedText = "foo = 1";
+
+        var expression = Cql2JsonParser.Parse(json);
+        var text = Cql2TextFormatter.Format(expression);
+
+        Assert.Equal(expectedText, text);
     }
 }
